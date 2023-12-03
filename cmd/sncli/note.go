@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -593,7 +594,7 @@ func outputNotes(c *cli.Context, count bool, output string, getNoteConfig sncli.
 	return msg, err
 }
 
-func processAddNotes(c *cli.Context, opts configOptsOutput) (msg string, err error) {
+func processAddNote(c *cli.Context, opts configOptsOutput) (msg string, err error) {
 	// get input
 	title := strings.TrimSpace(c.String("title"))
 	text := strings.TrimSpace(c.String("text"))
@@ -641,6 +642,77 @@ func processAddNotes(c *cli.Context, opts configOptsOutput) (msg string, err err
 	}
 
 	msg = sncli.Green(msgAddSuccess + " note")
+
+	return msg, err
+}
+
+func processAddDir(c *cli.Context, opts configOptsOutput) (msg string, err error) {
+	// get input
+	dir := strings.TrimSpace(c.String("dir"))
+
+	if dir == "" {
+		if cErr := cli.ShowSubcommandHelp(c); cErr != nil {
+			panic(cErr)
+		}
+
+		return "", errors.New("note dir not defined")
+	}
+
+	if isDir, err := sncli.IsDirectory(dir); err != nil || !isDir {
+		_ = cli.ShowSubcommandHelp(c)
+
+		return "", errors.New("dir is not a directory")
+	}
+
+	// get session
+	session, _, err := cache.GetSession(opts.useSession, opts.sessKey, opts.server, opts.debug)
+	if err != nil {
+		return "", err
+	}
+
+	extraProcessedTags := sncli.CommaSplit(c.String("tag"))
+	processedTags := extraProcessedTags
+
+	session.CacheDBPath, err = cache.GenCacheDBPath(session, opts.cacheDBDir, snAppName)
+	if err != nil {
+		return "", err
+	}
+
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if c.Bool("dirtags") {
+			dirTags, err := sncli.GetDirTags(path)
+			if err != nil {
+				return err
+			}
+			processedTags = append(extraProcessedTags, dirTags...)
+		}
+		title := filepath.Base(path)
+		AddNoteInput := sncli.AddNoteInput{
+			Session:  &session,
+			Title:    title,
+			Text:     "",
+			FilePath: path,
+			Tags:     processedTags,
+			Replace:  c.Bool("replace"),
+			Debug:    opts.debug,
+		}
+		if err = AddNoteInput.Run(); err != nil {
+			return fmt.Errorf("failed to add note in dir. %+v", err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to add notes from dir. %+v", err)
+	}
+
+	msg = sncli.Green(msgAddSuccess + " dir")
 
 	return msg, err
 }

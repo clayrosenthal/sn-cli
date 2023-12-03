@@ -263,7 +263,11 @@ func startCLI(args []string) (msg string, useStdOut bool, err error) {
 						if c.NArg() > 0 {
 							return
 						}
+<<<<<<< HEAD
 						fmt.Println("--title", "--parent", "--parent-uuid")
+=======
+						fmt.Println("--title", "--ref")
+>>>>>>> a2cc2fb (wip: dir add)
 					},
 					Flags: []cli.Flag{
 						cli.StringFlag{
@@ -332,7 +336,49 @@ func startCLI(args []string) (msg string, useStdOut bool, err error) {
 						}
 						useStdOut = opts.useStdOut
 
-						msg, err = processAddNotes(c, opts)
+						msg, err = processAddNote(c, opts)
+
+						return err
+					},
+				},
+				{
+					Name:  "dir",
+					Usage: "add notes from a directory",
+					BashComplete: func(c *cli.Context) {
+						addNoteOpts := []string{"--tag", "--replace", "--dirtags"}
+						if c.NArg() > 0 {
+							return
+						}
+						for _, ano := range addNoteOpts {
+							fmt.Println(ano)
+						}
+					},
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "dir",
+							Usage: "path to directory with notes content",
+						},
+						cli.StringFlag{
+							Name:  "tag",
+							Usage: "associate with extra tag (separate multiple with commas)",
+						},
+						cli.BoolFlag{
+							Name:  "dirtags",
+							Usage: "use directory names as tags (recursively)",
+						},
+						cli.BoolFlag{
+							Name:  "replace",
+							Usage: "replace notes with same title",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						opts, err := getOpts(c)
+						if err != nil {
+							return err
+						}
+						useStdOut = opts.useStdOut
+
+						msg, err = processAddDir(c, opts)
 
 						return err
 					},

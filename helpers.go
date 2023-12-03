@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jonhadfield/gosn-v2/items"
@@ -206,4 +207,25 @@ func RemoveDeleted(in items.Items) (out items.Items) {
 	}
 
 	return
+}
+
+func IsDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.IsDir(), err
+}
+
+func DirsToTags(path string) []string {
+	var tags []string
+
+	for dir := filepath.Dir(path); dir != "." && dir != "/"; dir = filepath.Dir(dir) {
+		if dir != "" {
+			tags = append(tags, dir)
+		}
+	}
+
+	return tags
 }
