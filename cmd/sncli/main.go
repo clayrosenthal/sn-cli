@@ -263,11 +263,7 @@ func startCLI(args []string) (msg string, useStdOut bool, err error) {
 						if c.NArg() > 0 {
 							return
 						}
-<<<<<<< HEAD
 						fmt.Println("--title", "--parent", "--parent-uuid")
-=======
-						fmt.Println("--title", "--ref")
->>>>>>> a2cc2fb (wip: dir add)
 					},
 					Flags: []cli.Flag{
 						cli.StringFlag{
